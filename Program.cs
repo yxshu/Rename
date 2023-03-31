@@ -8,6 +8,7 @@ using System.Linq;
 using System.Net.Mime;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Rename
@@ -17,9 +18,44 @@ namespace Rename
         static void Main(string[] args)
         {
             string path = "E:\\img";
+            int i = 0;
+            //获取所有图片的名称
+            foreach (string imagename in getImageAddressName())
+            {
+                if (String.IsNullOrEmpty(imagename.Trim())) continue;
+                //生成一个新名称
+                string newName = Guid.NewGuid().ToString() + ".jpg";
+                try
+                {
+                    //第一步：修改数据库//第二步：修改文件名
+                    updata(imagename, newName);
+                    rename(path, imagename, newName);
+                    Console.WriteLine("success:" + imagename + "-" + i);
+                    i++;
+
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("error:" + imagename + ex.Message);
+
+                }
+                //Thread.Sleep(2000);
+            }
+            Console.ReadLine();
         }
 
-        public List<Question> GetQuestions(DataTable dataTable)
+        public static List<string> getImageAddressName()
+        {
+            List<string> list = new List<string>();
+            foreach (Question q in GetQuestions(GetList("").Tables[0]))
+            {
+                if (!list.Contains(q.ImageAddress))
+                    list.Add(q.ImageAddress);
+            }
+            return list;
+        }
+
+        public static List<Question> GetQuestions(DataTable dataTable)
         {
             List<Question> list = new List<Question>();
             foreach (DataRow dr in dataTable.Rows)
@@ -48,7 +84,7 @@ namespace Rename
         /// <summary>
         /// 获得数据列表
         /// </summary>
-        public DataSet GetList(string strWhere)
+        public static DataSet GetList(string strWhere)
         {
             StringBuilder strSql = new StringBuilder();
             strSql.Append("select QuestionId,QuestionTitle,AnswerA,AnswerB,AnswerC,AnswerD,CorrectAnswer,ImageAddress,DifficultyId,UserId,UpLoadTime,VerifyTimes,IsVerified,IsDelte,IsSupported,IsDeSupported,PaperCodeId,TextBookId,ChapterId,PastExamPaperId,PastExamQuestionId ");
@@ -63,7 +99,7 @@ namespace Rename
         /// <summary>
 		/// 得到一个对象实体
 		/// </summary>
-		public Question DataRowToModel(DataRow row)
+		public static Question DataRowToModel(DataRow row)
         {
             Question model = new Question();
             if (row != null)
@@ -177,75 +213,18 @@ namespace Rename
         /// <param name="model"></param>
         /// <returns></returns>
         /// 
-        public bool updata(Question model)
+        public static bool updata(string oldname, string newName)
         {
             bool issuccess = false;
             StringBuilder strSql = new StringBuilder();
             strSql.Append("update Question set ");
-            strSql.Append("QuestionTitle=@QuestionTitle,");
-            strSql.Append("AnswerA=@AnswerA,");
-            strSql.Append("AnswerB=@AnswerB,");
-            strSql.Append("AnswerC=@AnswerC,");
-            strSql.Append("AnswerD=@AnswerD,");
-            strSql.Append("CorrectAnswer=@CorrectAnswer,");
-            strSql.Append("ImageAddress=@ImageAddress,");
-            strSql.Append("DifficultyId=@DifficultyId,");
-            strSql.Append("UserId=@UserId,");
-            strSql.Append("UpLoadTime=@UpLoadTime,");
-            strSql.Append("VerifyTimes=@VerifyTimes,");
-            strSql.Append("IsVerified=@IsVerified,");
-            strSql.Append("IsDelte=@IsDelte,");
-            strSql.Append("IsSupported=@IsSupported,");
-            strSql.Append("IsDeSupported=@IsDeSupported,");
-            strSql.Append("PaperCodeId=@PaperCodeId,");
-            strSql.Append("TextBookId=@TextBookId,");
-            strSql.Append("ChapterId=@ChapterId,");
-            strSql.Append("PastExamPaperId=@PastExamPaperId,");
-            strSql.Append("PastExamQuestionId=@PastExamQuestionId");
-            strSql.Append(" where QuestionId=@QuestionId");
+            strSql.Append("ImageAddress=@newImageAddress");
+            strSql.Append(" where ImageAddress=@oldImageAddress");
             SqlParameter[] parameters = {
-                    new SqlParameter("@QuestionTitle", SqlDbType.Text),
-                    new SqlParameter("@AnswerA", SqlDbType.Text),
-                    new SqlParameter("@AnswerB", SqlDbType.Text),
-                    new SqlParameter("@AnswerC", SqlDbType.Text),
-                    new SqlParameter("@AnswerD", SqlDbType.Text),
-                    new SqlParameter("@CorrectAnswer", SqlDbType.Int,4),
-                    new SqlParameter("@ImageAddress", SqlDbType.NVarChar,100),
-                    new SqlParameter("@DifficultyId", SqlDbType.Int,4),
-                    new SqlParameter("@UserId", SqlDbType.Int,4),
-                    new SqlParameter("@UpLoadTime", SqlDbType.DateTime),
-                    new SqlParameter("@VerifyTimes", SqlDbType.Int,4),
-                    new SqlParameter("@IsVerified", SqlDbType.Bit,1),
-                    new SqlParameter("@IsDelte", SqlDbType.Bit,1),
-                    new SqlParameter("@IsSupported", SqlDbType.Int,4),
-                    new SqlParameter("@IsDeSupported", SqlDbType.Int,4),
-                    new SqlParameter("@PaperCodeId", SqlDbType.Int,4),
-                    new SqlParameter("@TextBookId", SqlDbType.Int,4),
-                    new SqlParameter("@ChapterId", SqlDbType.Int,4),
-                    new SqlParameter("@PastExamPaperId", SqlDbType.Int,4),
-                    new SqlParameter("@PastExamQuestionId", SqlDbType.Int,4),
-                    new SqlParameter("@QuestionId", SqlDbType.Int,4)};
-            parameters[0].Value = model.QuestionTitle;
-            parameters[1].Value = model.AnswerA;
-            parameters[2].Value = model.AnswerB;
-            parameters[3].Value = model.AnswerC;
-            parameters[4].Value = model.AnswerD;
-            parameters[5].Value = model.CorrectAnswer;
-            parameters[6].Value = model.ImageAddress;
-            parameters[7].Value = model.DifficultyId;
-            parameters[8].Value = model.UserId;
-            parameters[9].Value = model.UpLoadTime;
-            parameters[10].Value = model.VerifyTimes;
-            parameters[11].Value = model.IsVerified;
-            parameters[12].Value = model.IsDelte;
-            parameters[13].Value = model.IsSupported;
-            parameters[14].Value = model.IsDeSupported;
-            parameters[15].Value = model.PaperCodeId;
-            parameters[16].Value = model.TextBookId;
-            parameters[17].Value = model.ChapterId;
-            parameters[18].Value = model.PastExamPaperId;
-            parameters[19].Value = model.PastExamQuestionId;
-            parameters[20].Value = model.QuestionId;
+                    new SqlParameter("@newImageAddress", SqlDbType.NVarChar,100),
+                    new SqlParameter("@oldImageAddress", SqlDbType.NVarChar,100)};
+            parameters[0].Value = newName;
+            parameters[1].Value = oldname;
             int rows = SQLHelper.ExecuteSql(strSql.ToString(), parameters);
             if (rows > 0)
             {
@@ -255,15 +234,13 @@ namespace Rename
             {
                 issuccess = false;
             }
-
-
             return issuccess;
         }
 
-        public bool rename(Question question, string path, out string newname)
+        public static bool rename(string path, string oldname, string newname)
         {
             bool issuccess = false;
-            newname = Guid.NewGuid().ToString();
+            File.Move(path + "\\" + oldname, path + "\\" + newname);
             return issuccess;
         }
     }
